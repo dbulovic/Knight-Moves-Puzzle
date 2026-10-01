@@ -288,8 +288,16 @@
 
             <div class="board-panel">
                 <h2>Bottom-left start</h2>
-                <p>Knight starts at: (5, 0)</p>
+                <p>Click a green highlighted square to move the knight</p>
                 <div class="board" id="bottom-left-board" aria-label="Knight board starting at the bottom left"></div>
+                <div class="info" id="bottom-left-info">Knight at: (5, 0) - Color value: 1</div>
+                <div class="stats" id="bottom-left-stats">Squares visited: 1</div>
+
+                <div class="score-section">
+                    <div class="score-label">Score</div>
+                    <div class="score-display" id="bottom-left-score">1</div>
+                    <div class="score-detail" id="bottom-left-score-detail">Starting square (blue): 1</div>
+                </div>
             </div>
         </div>
 
@@ -308,6 +316,10 @@
         let visitedSquaresColor = new Map();
         let moveCount = 0;
         let scoreHistory = [];
+        let bottomLeftKnightPos = { row: BOARD_SIZE - 1, col: 0 };
+        let bottomLeftSelectedSquares = new Set();
+        let bottomLeftVisitedSquares = new Set(['5-0']);
+        let bottomLeftScoreHistory = [];
 
         let colorValues = {
             blue: 1,
@@ -315,6 +327,7 @@
             yellow: 3
         };
         let score = colorValues["blue"];
+        let bottomLeftScore = colorValues["blue"];
 
 
         // Color pattern for each column
@@ -397,7 +410,6 @@
 
             // Reset the game when values change
             resetGame();
-            initializeBottomLeftBoard();
         }
 
         function initializeBoard() {
@@ -461,26 +473,115 @@
                     const color = getSquareColor(row, col);
                     square.className = `square ${color}`;
 
+                    const key = `${row}-${col}`;
+                    if (bottomLeftVisitedSquares.has(key)) {
+                        square.classList.add('visited');
+                    }
+
                     const valueLabel = document.createElement('div');
                     valueLabel.className = 'square-value';
                     valueLabel.textContent = colorValues[color];
                     square.appendChild(valueLabel);
 
-                    if (row === BOARD_SIZE - 1 && col === 0) {
+                    if (bottomLeftVisitedSquares.has(key) &&
+                        !(row === bottomLeftKnightPos.row && col === bottomLeftKnightPos.col)) {
+                        const badge = document.createElement('div');
+                        badge.className = 'visited-badge';
+                        badge.textContent = '✓';
+                        square.appendChild(badge);
+                    }
+
+                    if (row === bottomLeftKnightPos.row && col === bottomLeftKnightPos.col) {
                         const knightSpan = document.createElement('span');
                         knightSpan.textContent = KNIGHT_SYMBOL;
                         knightSpan.classList.add('knight');
                         square.appendChild(knightSpan);
                     }
 
+                    square.addEventListener('click', () => handleBottomLeftSquareClick(row, col));
                     board.appendChild(square);
                 }
             }
+
+            updateBottomLeftValidMoves();
+        }
+
+        function updateBottomLeftValidMoves() {
+            const board = document.getElementById('bottom-left-board');
+            board.querySelectorAll('.square.valid').forEach(square => {
+                square.classList.remove('valid');
+            });
+            bottomLeftSelectedSquares.clear();
+
+            knightMoves.forEach(move => {
+                const newRow = bottomLeftKnightPos.row + move.row;
+                const newCol = bottomLeftKnightPos.col + move.col;
+                const key = `${newRow}-${newCol}`;
+
+                if (newRow >= 0 && newRow < BOARD_SIZE &&
+                    newCol >= 0 && newCol < BOARD_SIZE &&
+                    !bottomLeftVisitedSquares.has(key)) {
+                    const square = board.children[newRow * BOARD_SIZE + newCol];
+                    square.classList.add('valid');
+                    bottomLeftSelectedSquares.add(key);
+                }
+            });
+        }
+
+        function handleBottomLeftSquareClick(row, col) {
+            if (!bottomLeftSelectedSquares.has(`${row}-${col}`)) {
+                return;
+            }
+
+            const newColor = getSquareColor(row, col);
+            const oldColor = getSquareColor(bottomLeftKnightPos.row, bottomLeftKnightPos.col);
+            const newValue = colorValues[newColor];
+
+            if (newColor === oldColor) {
+                bottomLeftScore += newValue;
+                bottomLeftScoreHistory.push(`+ ${newValue} (${newColor})`);
+            } else {
+                bottomLeftScore *= newValue;
+                bottomLeftScoreHistory.push(`× ${newValue} (${newColor})`);
+            }
+
+            bottomLeftKnightPos = { row, col };
+            bottomLeftVisitedSquares.add(`${row}-${col}`);
+            initializeBottomLeftBoard();
+            document.getElementById('bottom-left-info').textContent =
+                `Knight at: (${row}, ${col}) - Color value: ${newValue}`;
+            document.getElementById('bottom-left-stats').textContent =
+                `Squares visited: ${bottomLeftVisitedSquares.size}`;
+            updateBottomLeftScoreDisplay();
+        }
+
+        function updateBottomLeftScoreDisplay() {
+            const startingColor = getSquareColor(BOARD_SIZE - 1, 0);
+            document.getElementById('bottom-left-score').textContent = bottomLeftScore;
+            let detail = `Starting square (${startingColor}): ${colorValues[startingColor]}`;
+            if (bottomLeftScoreHistory.length > 0) {
+                detail += '\n' + bottomLeftScoreHistory.join('\n');
+            }
+            document.getElementById('bottom-left-score-detail').textContent = detail;
+        }
+
+        function resetBottomLeftGame() {
+            bottomLeftKnightPos = { row: BOARD_SIZE - 1, col: 0 };
+            bottomLeftVisitedSquares = new Set([`${BOARD_SIZE - 1}-0`]);
+            bottomLeftScoreHistory = [];
+            const startingColor = getSquareColor(bottomLeftKnightPos.row, bottomLeftKnightPos.col);
+            bottomLeftScore = colorValues[startingColor];
+
+            document.getElementById('bottom-left-info').textContent =
+                `Knight at: (${bottomLeftKnightPos.row}, 0) - Color value: ${bottomLeftScore}`;
+            document.getElementById('bottom-left-stats').textContent = 'Squares visited: 1';
+            updateBottomLeftScoreDisplay();
+            initializeBottomLeftBoard();
         }
 
         function updateValidMoves() {
             // Clear previous highlights
-            document.querySelectorAll('.square.valid').forEach(sq => {
+            document.querySelectorAll('#board .square.valid').forEach(sq => {
                 sq.classList.remove('valid');
             });
 
@@ -549,12 +650,13 @@
             document.getElementById('stats').textContent = `Squares visited: 1`;
             updateScoreDisplay();
             initializeBoard();
-  }
+            resetBottomLeftGame();
+        }
 
         // Initialize the game
         visitedSquares.add('0-0');
         initializeBoard();
-        initializeBottomLeftBoard();
+        resetBottomLeftGame();
     </script>
 </body>
 </html>
