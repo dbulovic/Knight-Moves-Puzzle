@@ -1,9 +1,9 @@
 knight_moves = [[2,1],[2,-1],[1,2],[1,-2],[-1,2],[-1,-2],[-2,1],[-2,-1]]
 
 val1 = 1
-val2 = 2
-val3 = 3
-score_goal = 12
+val2 = 3
+val3 = 2
+score_goal = 2024
 
 """Create a 6x6 board with customizable values matching the game pattern."""
 # Value pattern for each column (using indices to refer to the three values)
@@ -20,7 +20,7 @@ for row in range(6):
     board_row = [pattern[col][row] for col in range(6)]
     board.append(board_row)  
 
-def next_move(cur_pos, score, visited):
+def next_move(cur_pos, score, visited, goal):
     for move in knight_moves:
         new_pos = [cur_pos[0] + move[0],cur_pos[1] + move[1]]
         if 0 <= new_pos[0] < 6 and 0 <= new_pos[1] < 6:
@@ -29,19 +29,23 @@ def next_move(cur_pos, score, visited):
                 new_score = score + board[new_pos[0]][new_pos[1]]
             else:
                 new_score = score * board[new_pos[0]][new_pos[1]]
-            if new_score == score_goal and new_pos[0] == 5 and new_pos[1] == 5:
+            if new_score == score_goal and new_pos[0] == goal[0] and new_pos[1] == goal[1]:
                 print(visited + [[new_pos[0], new_pos[1]]])
                 return 0
             elif new_score > score_goal:
                 continue
             else:
                 new_visited = visited + [[new_pos[0], new_pos[1]]]
-                next_move_result = next_move(cur_pos=new_pos, score=new_score, visited=new_visited)
+                next_move_result = next_move(cur_pos=new_pos, score=new_score, visited=new_visited, goal=goal)
                 if next_move_result == 0:
-                    return 1
+                    return 0
     return 2
                 
 cur_pos = [0,0]
-next_move(cur_pos, val1, [cur_pos])
+print("Starting from position:", cur_pos)
+next_move(cur_pos, val1, [cur_pos], [5,5])
 
 
+cur_pos = [5,0]
+print("Starting from position:", cur_pos)
+next_move(cur_pos, val1, [cur_pos], [0,5])
