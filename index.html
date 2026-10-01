@@ -17,6 +17,9 @@
 
         .container {
             text-align: center;
+            width: 100%;
+            padding: 24px;
+            box-sizing: border-box;
         }
 
         h1 {
@@ -84,6 +87,20 @@
             margin: 20px auto;
             border: 3px solid #34495e;
             background-color: #34495e;
+        }
+
+        .boards {
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            gap: 24px;
+            flex-wrap: wrap;
+        }
+
+        .board-panel h2 {
+            color: #ecf0f1;
+            font-size: 18px;
+            margin: 10px 0;
         }
 
         .square {
@@ -217,6 +234,12 @@
             margin: 10px 0;
         }
 
+        @media (max-width: 760px) {
+            .boards {
+                gap: 8px;
+            }
+        }
+
         .stats {
             color: #ecf0f1;
             font-size: 16px;
@@ -248,15 +271,26 @@
             <div id="error" class="error"></div>
         </div>
 
-        <p>Click a green highlighted square to move the knight</p>
-        <div class="board" id="board"></div>
-        <div class="info" id="info">Knight at: (0, 0) - Color value: 1</div>
-        <div class="stats" id="stats">Squares visited: 1</div>
+        <div class="boards">
+            <div class="board-panel">
+                <h2>Top-left start</h2>
+                <p>Click a green highlighted square to move the knight</p>
+                <div class="board" id="board" aria-label="Knight board starting at the top left"></div>
+                <div class="info" id="info">Knight at: (0, 0) - Color value: 1</div>
+                <div class="stats" id="stats">Squares visited: 1</div>
 
-        <div class="score-section">
-            <div class="score-label">Score</div>
-            <div class="score-display" id="score">1</div>
-            <div class="score-detail" id="scoreDetail">Starting square (blue): 1</div>
+                <div class="score-section">
+                    <div class="score-label">Score</div>
+                    <div class="score-display" id="score">1</div>
+                    <div class="score-detail" id="scoreDetail">Starting square (blue): 1</div>
+                </div>
+            </div>
+
+            <div class="board-panel">
+                <h2>Bottom-left start</h2>
+                <p>Knight starts at: (5, 0)</p>
+                <div class="board" id="bottom-left-board" aria-label="Knight board starting at the bottom left"></div>
+            </div>
         </div>
 
         <div class="button-group">
@@ -363,6 +397,7 @@
 
             // Reset the game when values change
             resetGame();
+            initializeBottomLeftBoard();
         }
 
         function initializeBoard() {
@@ -414,6 +449,33 @@
             }
 
             updateValidMoves();
+        }
+
+        function initializeBottomLeftBoard() {
+            const board = document.getElementById('bottom-left-board');
+            board.innerHTML = '';
+
+            for (let row = 0; row < BOARD_SIZE; row++) {
+                for (let col = 0; col < BOARD_SIZE; col++) {
+                    const square = document.createElement('div');
+                    const color = getSquareColor(row, col);
+                    square.className = `square ${color}`;
+
+                    const valueLabel = document.createElement('div');
+                    valueLabel.className = 'square-value';
+                    valueLabel.textContent = colorValues[color];
+                    square.appendChild(valueLabel);
+
+                    if (row === BOARD_SIZE - 1 && col === 0) {
+                        const knightSpan = document.createElement('span');
+                        knightSpan.textContent = KNIGHT_SYMBOL;
+                        knightSpan.classList.add('knight');
+                        square.appendChild(knightSpan);
+                    }
+
+                    board.appendChild(square);
+                }
+            }
         }
 
         function updateValidMoves() {
@@ -492,6 +554,7 @@
         // Initialize the game
         visitedSquares.add('0-0');
         initializeBoard();
+        initializeBottomLeftBoard();
     </script>
 </body>
 </html>
