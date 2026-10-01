@@ -203,6 +203,21 @@
             max-width: 250px;
         }
 
+        .completion-status,
+        .game-status {
+            color: #ecf0f1;
+            font-weight: bold;
+            margin-top: 12px;
+        }
+
+        .game-status {
+            font-size: 20px;
+        }
+
+        .board.completed {
+            border-color: #2ecc71;
+        }
+
         button {
             padding: 10px 20px;
             font-size: 16px;
@@ -266,6 +281,10 @@
                     <label for="yellowValue">🟡 Yellow:</label>
                     <input type="number" id="yellowValue" class="yellow-input" value="3" min="0" max="999">
                 </div>
+                <div class="input-group">
+                    <label for="scoreGoal">Score goal:</label>
+                    <input type="number" id="scoreGoal" value="2024" min="0" step="1">
+                </div>
             </div>
             <button onclick="validateAndUpdate()">Update Values</button>
             <div id="error" class="error"></div>
@@ -284,6 +303,7 @@
                     <div class="score-display" id="score">1</div>
                     <div class="score-detail" id="scoreDetail">Starting square (blue): 1</div>
                 </div>
+                <div class="completion-status" id="top-completion-status"></div>
             </div>
 
             <div class="board-panel">
@@ -298,8 +318,11 @@
                     <div class="score-display" id="bottom-left-score">1</div>
                     <div class="score-detail" id="bottom-left-score-detail">Starting square (blue): 1</div>
                 </div>
+                <div class="completion-status" id="bottom-left-completion-status"></div>
             </div>
         </div>
+
+        <div class="game-status" id="game-status" aria-live="polite"></div>
 
         <div class="button-group">
             <button onclick="resetGame()">Reset Game</button>
@@ -316,10 +339,13 @@
         let visitedSquaresColor = new Map();
         let moveCount = 0;
         let scoreHistory = [];
+        let isTopBoardCompleted = false;
         let bottomLeftKnightPos = { row: BOARD_SIZE - 1, col: 0 };
         let bottomLeftSelectedSquares = new Set();
         let bottomLeftVisitedSquares = new Set(['5-0']);
         let bottomLeftScoreHistory = [];
+        let isBottomLeftBoardCompleted = false;
+        let scoreGoal = 2024;
 
         let colorValues = {
             blue: 1,
@@ -389,10 +415,16 @@
             const blueVal = parseInt(document.getElementById('blueValue').value);
             const redVal = parseInt(document.getElementById('redValue').value);
             const yellowVal = parseInt(document.getElementById('yellowValue').value);
+            const newScoreGoal = document.getElementById('scoreGoal').valueAsNumber;
 
             // Check if values are valid numbers
             if (isNaN(blueVal) || isNaN(redVal) || isNaN(yellowVal)) {
                 errorDiv.textContent = 'Please enter valid integers for all colors.';
+                return;
+            }
+
+            if (!Number.isSafeInteger(newScoreGoal) || newScoreGoal < 0) {
+                errorDiv.textContent = 'Please enter a non-negative integer score goal.';
                 return;
             }
 
@@ -407,6 +439,7 @@
             colorValues.blue = blueVal;
             colorValues.red = redVal;
             colorValues.yellow = yellowVal;
+            scoreGoal = newScoreGoal;
 
             // Reset the game when values change
             resetGame();
@@ -460,6 +493,7 @@
                 }
             }
 
+            board.classList.toggle('completed', isTopBoardCompleted);
             updateValidMoves();
         }
 
@@ -503,6 +537,7 @@
                 }
             }
 
+            board.classList.toggle('completed', isBottomLeftBoardCompleted);
             updateBottomLeftValidMoves();
         }
 
@@ -512,6 +547,9 @@
                 square.classList.remove('valid');
             });
             bottomLeftSelectedSquares.clear();
+            if (isBottomLeftBoardCompleted) {
+                return;
+            }
 
             knightMoves.forEach(move => {
                 const newRow = bottomLeftKnightPos.row + move.row;
@@ -529,7 +567,7 @@
         }
 
         function handleBottomLeftSquareClick(row, col) {
-            if (!bottomLeftSelectedSquares.has(`${row}-${col}`)) {
+            if (isBottomLeftBoardCompleted || !bottomLeftSelectedSquares.has(`${row}-${col}`)) {
                 return;
             }
 
@@ -547,12 +585,15 @@
 
             bottomLeftKnightPos = { row, col };
             bottomLeftVisitedSquares.add(`${row}-${col}`);
+            isBottomLeftBoardCompleted =
+                row === 0 && col === BOARD_SIZE - 1 && bottomLeftScore === scoreGoal;
             initializeBottomLeftBoard();
             document.getElementById('bottom-left-info').textContent =
                 `Knight at: (${row}, ${col}) - Color value: ${newValue}`;
             document.getElementById('bottom-left-stats').textContent =
                 `Squares visited: ${bottomLeftVisitedSquares.size}`;
             updateBottomLeftScoreDisplay();
+            updateCompletionStatus();
         }
 
         function updateBottomLeftScoreDisplay() {
@@ -569,6 +610,7 @@
             bottomLeftKnightPos = { row: BOARD_SIZE - 1, col: 0 };
             bottomLeftVisitedSquares = new Set([`${BOARD_SIZE - 1}-0`]);
             bottomLeftScoreHistory = [];
+            isBottomLeftBoardCompleted = false;
             const startingColor = getSquareColor(bottomLeftKnightPos.row, bottomLeftKnightPos.col);
             bottomLeftScore = colorValues[startingColor];
 
@@ -577,6 +619,21 @@
             document.getElementById('bottom-left-stats').textContent = 'Squares visited: 1';
             updateBottomLeftScoreDisplay();
             initializeBottomLeftBoard();
+            updateCompletionStatus();
+        }
+
+        function updateCompletionStatus() {
+            document.getElementById('top-completion-status').textContent = isTopBoardCompleted
+                ? 'Completed!'
+                : `Reach (5, 5) with a score of ${scoreGoal}.`;
+            document.getElementById('bottom-left-completion-status').textContent = isBottomLeftBoardCompleted
+                ? 'Completed!'
+                : `Reach (0, 5) with a score of ${scoreGoal}.`;
+
+            document.getElementById('game-status').textContent =
+                isTopBoardCompleted && isBottomLeftBoardCompleted
+                    ? 'You win! Both boards are completed.'
+                    : 'Complete both boards to win.';
         }
 
         function updateValidMoves() {
@@ -586,6 +643,9 @@
             });
 
             selectedSquares.clear();
+            if (isTopBoardCompleted) {
+                return;
+            }
 
             // Calculate valid moves (excluding visited squares)
             knightMoves.forEach(move => {
@@ -605,7 +665,7 @@
 
         function handleSquareClick(row, col) {
             // Check if the clicked square is a valid move
-            if (selectedSquares.has(`${row}-${col}`)) {
+            if (!isTopBoardCompleted && selectedSquares.has(`${row}-${col}`)) {
                 // Remove knight from old position
                 const oldSquare = document.getElementById(`square-${knightPos.row}-${knightPos.col}`);
                 oldSquare.querySelectorAll('.knight').forEach(k => k.remove());
@@ -621,6 +681,8 @@
                 visitedSquares.add(`${row}-${col}`);
                 const color = getSquareColor(row, col);
                 visitedSquaresColor.set(`${row}-${col}`, color);
+                isTopBoardCompleted =
+                    row === BOARD_SIZE - 1 && col === BOARD_SIZE - 1 && score === scoreGoal;
 
                 // Rebuild the board to show visited state
                 initializeBoard();
@@ -632,6 +694,7 @@
 
                 // Update score display
                 updateScoreDisplay();
+                updateCompletionStatus();
             }
         }
 
@@ -643,6 +706,7 @@
             visitedSquaresColor.clear();
             visitedSquaresColor.set('0-0', knightStartingColor);
             moveCount = 0;
+            isTopBoardCompleted = false;
             score = colorValues[knightStartingColor];
             scoreHistory = [];
 
