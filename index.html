@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Knight Move Game</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #2c3e50;
+        }
+
+        .container {
+            text-align: center;
+        }
+
+        h1 {
+            color: #ecf0f1;
+            margin-bottom: 20px;
+        }
+
+        .controls {
+            background-color: #34495e;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: inline-block;
+        }
+
+        .control-group {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .input-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .input-group label {
+            color: #ecf0f1;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .input-group input {
+            width: 60px;
+            padding: 8px;
+            font-size: 14px;
+            border: 2px solid #95a5a6;
+            border-radius: 4px;
+            text-align: center;
+        }
+
+        .input-group input.blue-input {
+            border-color: #3498db;
+            background-color: #e8f4f8;
+        }
+
+        .input-group input.red-input {
+            border-color: #e74c3c;
+            background-color: #fadbd8;
+        }
+
+        .input-group input.yellow-input {
+            border-color: #f1c40f;
+            background-color: #fef9e7;
+        }
+
+        .board {
+            display: grid;
+            grid-template-columns: repeat(6, 60px);
+            grid-template-rows: repeat(6, 60px);
+            gap: 0;
+            margin: 20px auto;
+            border: 3px solid #34495e;
+            background-color: #34495e;
+        }
+
+        .square {
+            width: 60px;
+            height: 60px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            font-size: 24px;
+            font-weight: bold;
+            user-select: none;
+            border: 1px solid #34495e;
+            transition: background-color 0.2s;
+            position: relative;
+        }
+
+        .square.blue {
+            background-color: #3498db;
+        }
+
+        .square.red {
+            background-color: #e74c3c;
+        }
+
+        .square.yellow {
+            background-color: #f1c40f;
+        }
+
+        .square.visited {
+            filter: brightness(0.7);
+            cursor: not-allowed;
+        }
+
+        .square.valid {
+            background-color: #2ecc71;
+            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .square.knight {
+            color: #000;
+            font-weight: bold;
+        }
+
+        .square-value {
+            font-size: 16px;
+            color: rgba(0, 0, 0, 0.6);
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            font-weight: bold;
+        }
+
+        .visited-badge {
+            font-size: 10px;
+            color: #fff;
+            position: absolute;
+            bottom: 2px;
+            left: 2px;
+            background-color: rgba(0, 0, 0, 0.5);
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-weight: bold;
+        }
+
+        .square:hover {
+            opacity: 0.8;
+        }
+
+        .info {
+            color: #ecf0f1;
+            font-size: 18px;
+            margin-top: 20px;
+        }
+
+        .score-section {
+            background-color: #34495e;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+            display: inline-block;
+        }
+
+        .score-display {
+            color: #2ecc71;
+            font-size: 24px;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+
+        .score-label {
+            color: #ecf0f1;
+            font-size: 14px;
+        }
+
+        .score-detail {
+            color: #bdc3c7;
+            font-size: 12px;
+            margin-top: 8px;
+            max-width: 250px;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #9b59b6;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            margin: 0 5px;
+        }
+
+        button:hover {
+            background-color: #8e44ad;
+        }
+
+        .button-group {
+            margin-top: 20px;
+        }
+
+        .error {
+            color: #e74c3c;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+
+        p {
+            color: #ecf0f1;
+            margin: 10px 0;
+        }
+
+        .stats {
+            color: #ecf0f1;
+            font-size: 16px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Knight Move Game</h1>
+        
+        <div class="controls">
+            <p style="margin-top: 0;">Associate integers with colors:</p>
+            <div class="control-group">
+                <div class="input-group">
+                    <label for="blueValue">🔵 Blue:</label>
+                    <input type="number" id="blueValue" class="blue-input" value="1" min="0" max="999">
+                </div>
+                <div class="input-group">
+                    <label for="redValue">🔴 Red:</label>
+                    <input type="number" id="redValue" class="red-input" value="2" min="0" max="999">
+                </div>
+                <div class="input-group">
+                    <label for="yellowValue">🟡 Yellow:</label>
+                    <input type="number" id="yellowValue" class="yellow-input" value="3" min="0" max="999">
+                </div>
+            </div>
+            <button onclick="validateAndUpdate()">Update Values</button>
+            <div id="error" class="error"></div>
+        </div>
+
+        <p>Click a green highlighted square to move the knight</p>
+        <div class="board" id="board"></div>
+        <div class="info" id="info">Knight at: (0, 0) - Color value: 1</div>
+        <div class="stats" id="stats">Squares visited: 1</div>
+
+        <div class="score-section">
+            <div class="score-label">Score</div>
+            <div class="score-display" id="score">1</div>
+            <div class="score-detail" id="scoreDetail">Starting square (blue): 1</div>
+        </div>
+
+        <div class="button-group">
+            <button onclick="resetGame()">Reset Game</button>
+        </div>
+    </div>
+
+    <script>
+        const BOARD_SIZE = 6;
+        const KNIGHT_SYMBOL = '♞';
+        let knightPos = { row: 0, col: 0 };
+        let knightStartingColor = 'blue';
+        let selectedSquares = new Set();
+        let visitedSquares = new Set();
+        let visitedSquaresColor = new Map();
+        let moveCount = 0;
+        let scoreHistory = [];
+
+        let colorValues = {
+            blue: 1,
+            red: 2,
+            yellow: 3
+        };
+        let score = colorValues["blue"];
+
+
+        // Color pattern for each column
+        const colorPattern = {
+            0: ['blue', 'blue', 'blue', 'blue', 'blue', 'blue'],           // column 0: all blue
+            1: ['red', 'red', 'blue', 'blue', 'blue', 'blue'],             // column 1: 2 red, 4 blue
+            2: ['red', 'red', 'red', 'red', 'blue', 'blue'],               // column 2: 4 red, 2 blue
+            3: ['yellow', 'yellow', 'red', 'red', 'red', 'red'],           // column 3: 2 yellow, 4 red
+            4: ['yellow', 'yellow', 'yellow', 'yellow', 'red', 'red'],     // column 4: 4 yellow, 2 red
+            5: ['yellow', 'yellow', 'yellow', 'yellow', 'yellow', 'yellow'] // column 5: all yellow
+        };
+
+        // Knight move offsets (L-shaped moves)
+        const knightMoves = [
+            { row: -2, col: -1 },
+            { row: -2, col: 1 },
+            { row: -1, col: -2 },
+            { row: -1, col: 2 },
+            { row: 1, col: -2 },
+            { row: 1, col: 2 },
+            { row: 2, col: -1 },
+            { row: 2, col: 1 }
+        ];
+
+        function getSquareColor(row, col) {
+            return colorPattern[col][row];
+        }
+
+        function updateScore(newRow, newCol) {
+            const newColor = getSquareColor(newRow, newCol);
+            const newValue = colorValues[newColor];
+            const oldColor = getSquareColor(knightPos.row, knightPos.col);
+
+            if (newColor === oldColor) {
+                // Same color: add value
+                score += newValue;
+                scoreHistory.push(`+ ${newValue} (${newColor})`);
+            } else {
+                // Different color: multiply by value
+                score *= newValue;
+                scoreHistory.push(`× ${newValue} (${newColor})`);
+            }
+        }
+
+        function updateScoreDisplay() {
+            document.getElementById('score').textContent = score;
+            
+            let detail = `Starting square (${knightStartingColor}): ${colorValues[knightStartingColor]}`;
+            if (scoreHistory.length > 0) {
+                detail += '\n' + scoreHistory.join('\n');
+            }
+            document.getElementById('scoreDetail').textContent = detail;
+        }
+
+        function validateAndUpdate() {
+            const errorDiv = document.getElementById('error');
+            errorDiv.textContent = '';
+
+            const blueVal = parseInt(document.getElementById('blueValue').value);
+            const redVal = parseInt(document.getElementById('redValue').value);
+            const yellowVal = parseInt(document.getElementById('yellowValue').value);
+
+            // Check if values are valid numbers
+            if (isNaN(blueVal) || isNaN(redVal) || isNaN(yellowVal)) {
+                errorDiv.textContent = 'Please enter valid integers for all colors.';
+                return;
+            }
+
+            // Check if all values are unique
+            const values = [blueVal, redVal, yellowVal];
+            if (new Set(values).size !== values.length) {
+                errorDiv.textContent = 'All three integers must be different.';
+                return;
+            }
+
+            // Update color values
+            colorValues.blue = blueVal;
+            colorValues.red = redVal;
+            colorValues.yellow = yellowVal;
+
+            // Reset the game when values change
+            resetGame();
+        }
+
+        function initializeBoard() {
+            const board = document.getElementById('board');
+            board.innerHTML = '';
+
+            for (let row = 0; row < BOARD_SIZE; row++) {
+                for (let col = 0; col < BOARD_SIZE; col++) {
+                    const square = document.createElement('div');
+                    square.className = 'square';
+                    
+                    // Apply custom color pattern
+                    const color = colorPattern[col][row];
+                    square.classList.add(color);
+
+                    // Mark as visited if it's been visited
+                    if (visitedSquares.has(`${row}-${col}`)) {
+                        square.classList.add('visited');
+                    }
+
+                    square.id = `square-${row}-${col}`;
+
+                    // Add value label
+                    const valueLabel = document.createElement('div');
+                    valueLabel.className = 'square-value';
+                    valueLabel.textContent = colorValues[color];
+                    square.appendChild(valueLabel);
+
+                    // Add visited badge if visited
+                    if (visitedSquares.has(`${row}-${col}`) && !(row === knightPos.row && col === knightPos.col)) {
+                        const badge = document.createElement('div');
+                        badge.className = 'visited-badge';
+                        badge.textContent = '✓';
+                        square.appendChild(badge);
+                    }
+
+                    // Add knight symbol
+                    if (row === knightPos.row && col === knightPos.col) {
+                        const knightSpan = document.createElement('span');
+                        knightSpan.textContent = KNIGHT_SYMBOL;
+                        knightSpan.classList.add('knight');
+                        square.appendChild(knightSpan);
+                    }
+
+                    square.addEventListener('click', () => handleSquareClick(row, col));
+
+                    board.appendChild(square);
+                }
+            }
+
+            updateValidMoves();
+        }
+
+        function updateValidMoves() {
+            // Clear previous highlights
+            document.querySelectorAll('.square.valid').forEach(sq => {
+                sq.classList.remove('valid');
+            });
+
+            selectedSquares.clear();
+
+            // Calculate valid moves (excluding visited squares)
+            knightMoves.forEach(move => {
+                const newRow = knightPos.row + move.row;
+                const newCol = knightPos.col + move.col;
+
+                if (newRow >= 0 && newRow < BOARD_SIZE && newCol >= 0 && newCol < BOARD_SIZE) {
+                    // Only allow move if square hasn't been visited
+                    if (!visitedSquares.has(`${newRow}-${newCol}`)) {
+                        const square = document.getElementById(`square-${newRow}-${newCol}`);
+                        square.classList.add('valid');
+                        selectedSquares.add(`${newRow}-${newCol}`);
+                    }
+                }
+            });
+        }
+
+        function handleSquareClick(row, col) {
+            // Check if the clicked square is a valid move
+            if (selectedSquares.has(`${row}-${col}`)) {
+                // Remove knight from old position
+                const oldSquare = document.getElementById(`square-${knightPos.row}-${knightPos.col}`);
+                oldSquare.querySelectorAll('.knight').forEach(k => k.remove());
+
+                // Update score before moving
+                updateScore(row, col);
+
+                // Move knight to new position
+                knightPos = { row, col };
+                moveCount++;
+
+                // Mark as visited
+                visitedSquares.add(`${row}-${col}`);
+                const color = getSquareColor(row, col);
+                visitedSquaresColor.set(`${row}-${col}`, color);
+
+                // Rebuild the board to show visited state
+                initializeBoard();
+
+                // Update info
+                const value = colorValues[color];
+                document.getElementById('info').textContent = `Knight at: (${row}, ${col}) - Color value: ${value}`;
+                document.getElementById('stats').textContent = `Squares visited: ${visitedSquares.size}`;
+
+                // Update score display
+                updateScoreDisplay();
+            }
+        }
+
+        function resetGame() {
+            knightPos = { row: 0, col: 0 };
+            knightStartingColor = getSquareColor(0, 0);
+            visitedSquares.clear();
+            visitedSquares.add('0-0');
+            visitedSquaresColor.clear();
+            visitedSquaresColor.set('0-0', knightStartingColor);
+            moveCount = 0;
+            score = colorValues[knightStartingColor];
+            scoreHistory = [];
+
+            document.getElementById('info').textContent = `Knight at: (0, 0) - Color value: ${colorValues[knightStartingColor]}`;
+            document.getElementById('stats').textContent = `Squares visited: 1`;
+            updateScoreDisplay();
+            initializeBoard();
+  }
+
+        // Initialize the game
+        visitedSquares.add('0-0');
+        initializeBoard();
+    </script>
+</body>
+</html>
